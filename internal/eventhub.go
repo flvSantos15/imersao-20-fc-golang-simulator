@@ -19,6 +19,16 @@ type EventHub struct {
 	simulatorWriter *kafka.Writer
 }
 
+func NewEventHub(routeService *RouteService, mongoClient *mongo.Client, chDriverMoved chan *DriverMovedEvent, freightWriter, simulatorWriter *kafka.Writer) *EventHub {
+	return &EventHub{
+		routeService: routeService,
+		mongoClient: mongoClient,
+		chDriverMoved: chDriverMoved,
+		freightWriter: freightWriter,
+		simulatorWriter: simulatorWriter,
+	}
+}
+
 func (eh *EventHub) HandleEvent(msg []byte) error {
 	var baseEvent struct {
 		EventName string `json:"event"`
@@ -76,12 +86,12 @@ func (eh *EventHub) handleDeliveryStarted(event DeliveryStartedEvent) error {
 		return err
 	}
 
-	go eh.sendPositions()
+	go eh.sendDirections()
 
 	return nil
 }
 
-func (eh *EventHub) sendPositions() {
+func (eh *EventHub) sendDirections() {
 	for {
 		select {
 			case movedEvent := <- eh.chDriverMoved:
